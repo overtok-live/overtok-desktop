@@ -20,7 +20,8 @@ permissions:
   contents: read
 env:
   CHANNEL: ${{ github.event_name == 'push' && 'desktop' || 'desktop-dev' }}
-  CONFIG: ${{ github.event_name == 'push' && '' || '--config src-tauri/tauri.dev.conf.json' }}
+  # Never an empty value here: `a && '' || b` reads '' as false and always picks b.
+  CONFIG: ${{ github.event_name == 'push' && '--config src-tauri/tauri.conf.json' || '--config src-tauri/tauri.dev.conf.json' }}
   R2_ENDPOINT: https://e6d565534a3402ba68c340337767c336.r2.cloudflarestorage.com
   R2_BUCKET: overtok-downloads
 jobs:
