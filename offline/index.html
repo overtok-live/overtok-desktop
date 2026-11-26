@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Overtok</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0d0d0c;
+        --fg: #f3f1ea;
+        --fg-2: #a8a69e;
+        --key: #d7ff3a;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        display: grid;
+        place-items: center;
+        background: var(--bg);
+        color: var(--fg);
+        font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      main { display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; }
+      svg { width: 72px; height: 72px; }
+      .mark { animation: breathe 2.4s ease-in-out infinite; transform-origin: center; }
+      h1 { margin: 0; font-size: 20px; font-weight: 600; }
+      p { margin: 0; color: var(--fg-2); max-width: 340px; }
+      button {
+        appearance: none; border: 0; border-radius: 999px; padding: 10px 20px;
+        background: var(--key); color: #0d0d0c; font: inherit; font-weight: 600; cursor: pointer;
+      }
+      button:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+      [hidden] { display: none !important; }
+      @keyframes breathe { 50% { transform: scale(0.94); opacity: 0.8; } }
+      @media (prefers-reduced-motion: reduce) { .mark { animation: none; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <g class="mark" transform="translate(16 16) scale(0.68)">
+          <mask id="gap"><rect width="100" height="100" fill="#fff" /><circle cx="65" cy="35" r="40" fill="#000" /></mask>
+          <circle cx="35" cy="65" r="30" fill="none" stroke="#F3F1EA" stroke-width="10" mask="url(#gap)" />
+          <circle cx="65" cy="35" r="35" fill="#D7FF3A" />
+        </g>
+      </svg>
+      <div id="opening">
+        <h1>Opening Overtok…</h1>
+      </div>
+      <div id="offline" hidden>
+        <h1>Can't reach Overtok</h1>
+        <p>Check that this computer is online. Overtok tries again on its own.</p>
+      </div>
+      <button id="retry" type="button" hidden>Try again</button>
+    </main>
+    <script>
+      // The window starts here, then goes to the dashboard as soon as it answers; offline, it
+      // says so and tries again every 5 seconds.
+      const invoke = window.__TAURI_INTERNALS__?.invoke;
+      let timer = null;
+      async function open() {
+        clearTimeout(timer);
+        const { appUrl } = await invoke("app_info");
+        try {
+          await fetch(`${appUrl}/sign-in`, { mode: "no-cors", cache: "no-store" });
+          window.location.replace(`${appUrl}/live`);
+        } catch {
+          document.getElementById("opening").hidden = true;
+          document.getElementById("offline").hidden = false;
+          document.getElementById("retry").hidden = false;
+          timer = setTimeout(open, 5000);
+        }
+      }
+      document.getElementById("retry").addEventListener("click", open);
+      open();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,130 @@
+name: Release
+# Builds the desktop app for Windows, macOS (universal) and Linux, signs its update bundles,
+# uploads everything to R2 (downloads.overtok.live) and publishes the manifests last, so installed
+# apps only see a release once all of it is there.
+# - Overtok: push a tag `desktop-v<version>` matching src-tauri/tauri.conf.json.
+# - Overtok Dev: run this workflow by hand.
+on:
+  push:
+    tags: ["desktop-v*"]
+  workflow_dispatch:
+    inputs:
+      minimum:
+        description: "Make this version required for everyone below it (leave empty otherwise)"
+        required: false
+        default: ""
+concurrency:
+  group: release
+  cancel-in-progress: false
+permissions:
+  contents: read
+env:
+  CHANNEL: ${{ github.event_name == 'push' && 'desktop' || 'desktop-dev' }}
+  CONFIG: ${{ github.event_name == 'push' && '' || '--config src-tauri/tauri.dev.conf.json' }}
+  R2_ENDPOINT: https://e6d565534a3402ba68c340337767c336.r2.cloudflarestorage.com
+  R2_BUCKET: overtok-downloads
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: version
+        run: |
+          version=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          if [ "${{ github.event_name }}" = "push" ] && [ "${GITHUB_REF_NAME#desktop-v}" != "$version" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} doesn't match tauri.conf.json version ${version}"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            args: ""
+          - os: macos-latest
+            args: "--target universal-apple-darwin"
+          - os: ubuntu-22.04
+            args: ""
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Linux build tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev
+      - name: Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          if [ "${{ runner.os }}" = "macOS" ]; then rustup target add aarch64-apple-darwin x86_64-apple-darwin; fi
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - name: Build
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npx tauri build ${{ matrix.args }} ${{ env.CONFIG }}
+      - name: Collect the installers
+        run: |
+          mkdir -p out
+          find src-tauri/target -path '*/release/bundle/*' -type f \
+            \( -name '*-setup.exe' -o -name '*-setup.exe.sig' -o -name '*.dmg' -o -name '*.app.tar.gz' \
+               -o -name '*.app.tar.gz.sig' -o -name '*.AppImage' -o -name '*.AppImage.sig' -o -name '*.deb' \) \
+            -exec cp {} out/ \;
+          # Spaces (Overtok Dev) make awkward links.
+          for f in out/*; do mv "$f" "out/$(basename "$f" | tr ' ' '_')"; done
+          ls -la out
+      - name: Upload to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_DOWNLOADS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_DOWNLOADS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          aws s3 cp out "s3://${R2_BUCKET}/${CHANNEL}/${{ needs.version.outputs.version }}/" \
+            --recursive --endpoint-url "$R2_ENDPOINT" --cache-control "public, max-age=31536000, immutable"
+
+  publish:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Publish the manifests
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_DOWNLOADS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_DOWNLOADS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          mkdir release
+          aws s3 cp "s3://${R2_BUCKET}/${CHANNEL}/${VERSION}/" release --recursive --exclude '*' \
+            --include '*.sig' --endpoint-url "$R2_ENDPOINT"
+          aws s3 ls "s3://${R2_BUCKET}/${CHANNEL}/${VERSION}/" --endpoint-url "$R2_ENDPOINT" \
+            | awk '{print $4}' | grep -v '\.sig$' | while read -r name; do : > "release/$name"; done
+          node scripts/manifest.mjs release "$VERSION" \
+            "https://downloads.overtok.live/${CHANNEL}/${VERSION}" "${{ inputs.minimum }}"
+          # Last: installed apps and the website see the release only now.
+          for file in downloads.json latest.json; do
+            aws s3 cp "release/$file" "s3://${R2_BUCKET}/${CHANNEL}/$file" \
+              --endpoint-url "$R2_ENDPOINT" --cache-control "public, max-age=60" --content-type application/json
+          done

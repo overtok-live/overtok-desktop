@@ -1,0 +1,20 @@
+{
+  "productName": "Overtok Dev",
+  "identifier": "live.overtok.desktop.dev",
+  "app": {
+    "security": {
+      "capabilities": ["local", "dashboard-dev"]
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE5QUMxQ0REMTYzNUFENjIKUldSaXJUVVczUnlzcWNuV2M4Wm8ySEhMc1FwQVBDSlJ1NDZuMmJzbEhmVXFnL3BKSWNkR1JMZFMK",
+      "endpoints": ["https://downloads.overtok.live/desktop-dev/latest.json"]
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": ["overtok-dev"]
+      }
+    }
+  }
+}

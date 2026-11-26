@@ -1,0 +1,27 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "dashboard",
+  "description": "The hosted dashboard, and only it: the few things the desktop does for it (ADR 0010).",
+  "windows": ["main"],
+  "remote": {
+    "urls": ["https://app.overtok.live/*"]
+  },
+  "permissions": [
+    "allow-app-info",
+    "allow-begin-sign-in",
+    "allow-open-external",
+    "allow-set-live",
+    "allow-update-state",
+    "allow-install-update",
+    "allow-get-autostart",
+    "allow-set-autostart",
+    "allow-obs-open",
+    "allow-obs-send",
+    "allow-obs-close",
+    "allow-obs-settings",
+    "allow-sound-window",
+    "allow-sound-window-on",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten"
+  ]
+}

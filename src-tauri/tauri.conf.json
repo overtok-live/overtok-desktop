@@ -1,0 +1,55 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Overtok",
+  "version": "0.1.0",
+  "identifier": "live.overtok.desktop",
+  "build": {
+    "frontendDist": "../offline"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "security": {
+      "csp": null,
+      "capabilities": ["local", "dashboard"]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "app", "dmg", "appimage", "deb"],
+    "createUpdaterArtifacts": true,
+    "category": "Video",
+    "shortDescription": "TikTok LIVE overlays, alerts and games",
+    "longDescription": "Overtok in its own window: your TikTok LIVE overlays, alerts, games and stats, always ready, updating itself.",
+    "copyright": "© Overtok",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "signingIdentity": "-"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE5QUMxQ0REMTYzNUFENjIKUldSaXJUVVczUnlzcWNuV2M4Wm8ySEhMc1FwQVBDSlJ1NDZuMmJzbEhmVXFnL3BKSWNkR1JMZFMK",
+      "endpoints": ["https://downloads.overtok.live/desktop/latest.json"],
+      "windows": {
+        "installMode": "passive"
+      }
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": ["overtok"]
+      }
+    }
+  }
+}
