@@ -4,6 +4,7 @@
 
 mod app_audio;
 mod channel;
+mod mixer;
 mod obs;
 mod signin;
 mod sound;
@@ -124,10 +125,16 @@ fn handle_links(app: &AppHandle, links: &[Url]) {
 }
 
 /// The first run turns starting with the computer on; the streamer can turn it off in Settings.
+/// Later runs write it again while it's on, so it starts this program: 0.1.3 renamed the
+/// Windows program from `overtok-desktop.exe` to `Overtok.exe` (what LIVE Studio's list shows),
+/// and the installer deletes the old one.
 fn first_run(app: &AppHandle) {
     let Ok(dir) = app.path().app_config_dir() else { return };
     let marker = dir.join("first-run-done");
     if marker.exists() {
+        if app.autolaunch().is_enabled().unwrap_or(false) {
+            let _ = app.autolaunch().enable();
+        }
         return;
     }
     let _ = std::fs::create_dir_all(&dir);
@@ -230,7 +237,8 @@ pub fn run() {
             obs::obs_close,
             obs::obs_settings,
             sound::sound_window,
-            sound::sound_window_on
+            sound::sound_window_on,
+            sound::app_audio
         ])
         .build(tauri::generate_context!())
         .expect("error while building Overtok")

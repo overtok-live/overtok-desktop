@@ -1,6 +1,6 @@
 [package]
 name = "overtok-desktop"
-version = "0.1.2"
+version = "0.1.3"
 description = "Overtok for the desktop: the dashboard in its own window, in the tray, updating itself."
 authors = ["Overtok"]
 edition = "2021"
@@ -28,8 +28,9 @@ rand = "0.8"
 semver = "1"
 tungstenite = { version = "0.30", default-features = false, features = ["handshake"] }
 
-# Windows: a silent sound of the app's own keeps it in LIVE Studio's Application list (app_audio.rs).
-[target.'cfg(windows)'.dependencies]
+# Windows: the app plays the sound page's sound itself, so LIVE Studio's Application source of
+# Overtok.exe carries it (app_audio.rs). macOS: only to try it (OVERTOK_AUDIO_TAP).
+[target.'cfg(any(windows, target_os = "macos"))'.dependencies]
 cpal = "0.18"
 
 [profile.release]

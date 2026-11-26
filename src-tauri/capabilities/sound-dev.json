@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "sound-dev",
+  "description": "Overtok Dev's sound window: the dev dashboard's sound page and a local one.",
+  "windows": ["sound"],
+  "remote": {
+    "urls": ["https://app.dev.overtok.live/*", "http://localhost:3000/*"]
+  },
+  "permissions": ["allow-app-audio"]
+}

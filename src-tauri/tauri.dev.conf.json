@@ -1,9 +1,10 @@
 {
   "productName": "Overtok Dev",
+  "mainBinaryName": "Overtok Dev",
   "identifier": "live.overtok.desktop.dev",
   "app": {
     "security": {
-      "capabilities": ["local", "dashboard-dev"]
+      "capabilities": ["local", "dashboard-dev", "sound-dev"]
     }
   },
   "plugins": {

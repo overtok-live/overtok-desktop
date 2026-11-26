@@ -2,9 +2,9 @@
 //! (Audio mixer › Add audio source › Application), so the app plays the scene's sounds in a hidden
 //! window of its own, and the streamer picks Overtok there: nothing else on the computer goes out.
 //! The app plays sound without a click (web views here allow autoplay), keeps it on across
-//! restarts and opens only the dashboard's own sound page. On Windows its sound plays from
-//! WebView2's processes, so the app keeps a silent sound of its own open meanwhile
-//! (`app_audio.rs`): that's what puts `Overtok.exe` in LIVE Studio's list.
+//! restarts and opens only the dashboard's own sound page. On Windows the page hands its sound to
+//! the app (`tap=1`, the `app_audio` command), which plays it as `Overtok.exe` (`app_audio.rs`):
+//! LIVE Studio captures that program, never WebView2's own processes.
 
 use tauri::{AppHandle, Manager, State, Url, WebviewUrl, WebviewWindowBuilder};
 
@@ -27,7 +27,7 @@ pub fn sound_url(channel: &Channel, page: &str) -> Option<Url> {
     }
     let mut clean = Url::parse(&channel.app_origin()).ok()?;
     clean.set_path(url.path());
-    clean.set_query(Some("app=1"));
+    clean.set_query(Some(if crate::app_audio::tap_enabled() { "app=1&tap=1" } else { "app=1" }));
     Some(clean)
 }
 
@@ -80,6 +80,38 @@ pub async fn sound_window(
     open(&app, url).map_err(|err| err.to_string())
 }
 
+/// The biggest chunk the page hands over at once (bytes): 1024 stereo frames of 32-bit floats,
+/// with room to spare.
+const MAX_CHUNK: usize = 64 * 1024;
+
+/// A chunk of the sound page's sound for the app to play (`app_audio.rs`): the body is stereo
+/// frames as little-endian 32-bit floats, the headers say which audio context made them and at
+/// what rate. Answers whether it's heard: false, and the page plays it itself (from WebView2).
+/// Only the sound window may call it (its capability).
+#[tauri::command]
+pub fn app_audio(request: tauri::ipc::Request<'_>, audio: State<'_, AppAudio>) -> Result<bool, String> {
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return Err("body".into());
+    };
+    if bytes.len() > MAX_CHUNK {
+        return Err("size".into());
+    }
+    let header = |name: &str| {
+        request
+            .headers()
+            .get(name)
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| value.parse::<u32>().ok())
+    };
+    let (Some(stream), Some(rate)) = (header("x-overtok-stream"), header("x-overtok-rate")) else {
+        return Err("headers".into());
+    };
+    if !(8_000..=192_000).contains(&rate) {
+        return Err("rate".into());
+    }
+    Ok(audio.push(stream, rate, &crate::mixer::samples_of(bytes)))
+}
+
 /// Whether the sound window is on.
 #[tauri::command]
 pub fn sound_window_on(app: AppHandle) -> bool {
@@ -108,7 +140,8 @@ mod tests {
     #[test]
     fn plays_only_the_dashboards_sound_page() {
         let ok = sound_url(&prod(), "https://app.overtok.live/o/abc_D-1/sound?x=1").unwrap();
-        assert_eq!(ok.as_str(), "https://app.overtok.live/o/abc_D-1/sound?app=1");
+        let query = if crate::app_audio::tap_enabled() { "app=1&tap=1" } else { "app=1" };
+        assert_eq!(ok.as_str(), format!("https://app.overtok.live/o/abc_D-1/sound?{query}"));
         assert!(sound_url(&prod(), "https://evil.example/o/abc/sound").is_none());
         assert!(sound_url(&prod(), "https://app.overtok.live/o/abc").is_none());
         assert!(sound_url(&prod(), "https://app.overtok.live/o/abc/scene").is_none());

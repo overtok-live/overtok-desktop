@@ -1,1 +1,1 @@
-Play sounds in the app works on Windows again (it did nothing in 0.1.1), and the app now plays your sounds on its own when you go LIVE from TikTok LIVE Studio, so Overtok.exe is always in LIVE Studio's Add audio source › Application list.
+On Windows, the app is now called Overtok.exe and plays your sounds itself, so TikTok LIVE Studio's Add audio source › Application › Overtok.exe carries Overtok's sounds to your LIVE (it was silent before: the sounds played from Microsoft Edge WebView2). If you added overtok-desktop.exe there, pick Overtok.exe instead.

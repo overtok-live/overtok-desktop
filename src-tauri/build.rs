@@ -16,6 +16,7 @@ fn main() {
             "obs_settings",
             "sound_window",
             "sound_window_on",
+            "app_audio",
         ]),
     ))
     .expect("failed to run the Tauri build script");
