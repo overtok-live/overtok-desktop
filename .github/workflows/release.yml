@@ -90,7 +90,10 @@ jobs:
                -o -name '*.app.tar.gz.sig' -o -name '*.AppImage' -o -name '*.AppImage.sig' -o -name '*.deb' \) \
             -exec cp {} out/ \;
           # Spaces (Overtok Dev) make awkward links.
-          for f in out/*; do mv "$f" "out/$(basename "$f" | tr ' ' '_')"; done
+          for f in out/*; do
+            to="out/$(basename "$f" | tr ' ' '_')"
+            if [ "$f" != "$to" ]; then mv "$f" "$to"; fi
+          done
           ls -la out
       - name: Upload to R2
         env:
