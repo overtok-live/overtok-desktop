@@ -1,1 +1,1 @@
-The first version of Overtok for the desktop: your dashboard in its own window, in the tray during a LIVE, starting with your computer and updating itself.
+Overtok now shows up in TikTok LIVE Studio's Add audio source › Application list on Windows while Play sounds in the app is on, so only Overtok's sounds reach your LIVE. Turn Speaker off in LIVE Studio's Audio mixer when you use it, or viewers hear every sound twice.

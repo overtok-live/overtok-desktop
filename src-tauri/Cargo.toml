@@ -1,6 +1,6 @@
 [package]
 name = "overtok-desktop"
-version = "0.1.0"
+version = "0.1.1"
 description = "Overtok for the desktop: the dashboard in its own window, in the tray, updating itself."
 authors = ["Overtok"]
 edition = "2021"
@@ -27,6 +27,10 @@ url = "2"
 rand = "0.8"
 semver = "1"
 tungstenite = { version = "0.30", default-features = false, features = ["handshake"] }
+
+# Windows: a silent sound of the app's own keeps it in LIVE Studio's Application list (app_audio.rs).
+[target.'cfg(windows)'.dependencies]
+cpal = "0.18"
 
 [profile.release]
 codegen-units = 1

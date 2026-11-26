@@ -2,6 +2,7 @@
 //! runs, starting with the computer and updating itself. The dashboard calls the few commands
 //! below; the capabilities let only its own origin do so.
 
+mod app_audio;
 mod channel;
 mod obs;
 mod signin;
@@ -176,6 +177,7 @@ pub fn run() {
         .manage(PendingSignIn::default())
         .manage(Updates::default())
         .manage(obs::ObsSockets::default())
+        .manage(app_audio::AppAudio::start())
         .setup(|app| {
             let handle = app.handle().clone();
             let identifier = app.config().identifier.clone();

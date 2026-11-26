@@ -2,10 +2,13 @@
 //! (Audio mixer › Add audio source › Application), so the app plays the scene's sounds in a hidden
 //! window of its own, and the streamer picks Overtok there: nothing else on the computer goes out.
 //! The app plays sound without a click (web views here allow autoplay), keeps it on across
-//! restarts and opens only the dashboard's own sound page.
+//! restarts and opens only the dashboard's own sound page. On Windows its sound plays from
+//! WebView2's processes, so the app keeps a silent sound of its own open meanwhile
+//! (`app_audio.rs`): that's what puts `Overtok.exe` in LIVE Studio's list.
 
 use tauri::{AppHandle, Manager, State, Url, WebviewUrl, WebviewWindowBuilder};
 
+use crate::app_audio::AppAudio;
 use crate::channel::Channel;
 
 pub const LABEL: &str = "sound";
@@ -42,6 +45,7 @@ fn open(app: &AppHandle, url: Url) -> tauri::Result<()> {
         .visible(false)
         .on_navigation(move |url| channel.app_origin() == url.origin().ascii_serialization())
         .build()?;
+    app.state::<AppAudio>().set(true);
     Ok(())
 }
 
@@ -56,6 +60,7 @@ pub fn sound_window(app: AppHandle, channel: State<Channel>, page: Option<String
         if let Some(window) = app.get_webview_window(LABEL) {
             let _ = window.destroy();
         }
+        app.state::<AppAudio>().set(false);
         if let Some(file) = saved(&app) {
             let _ = std::fs::remove_file(file);
         }

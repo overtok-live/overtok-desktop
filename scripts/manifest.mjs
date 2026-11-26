@@ -2,7 +2,8 @@
 // - latest.json: what installed apps read to update themselves (Tauri's updater format, plus
 //   `minimum`: below it, the update is required);
 // - downloads.json: the installers the website's Download page links to.
-// CLI: node manifest.mjs <dir> <version> <base-url> [minimum]  (notes from RELEASE_NOTES.md)
+// CLI: node manifest.mjs <dir> <version> <base-url> [minimum]  (notes from RELEASE_NOTES.md; no
+// minimum given: the floor in MINIMUM_VERSION)
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -61,11 +62,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   try {
     notes = readFileSync(new URL("../RELEASE_NOTES.md", import.meta.url), "utf8").trim();
   } catch {}
+  // A tag passes no minimum: MINIMUM_VERSION holds the floor every release keeps.
+  let floor = "";
+  try {
+    floor = readFileSync(new URL("../MINIMUM_VERSION", import.meta.url), "utf8").trim();
+  } catch {}
   const { latest, downloads } = buildManifests({
     version,
     notes,
     pubDate: new Date().toISOString(),
-    minimum: minimum || null,
+    minimum: minimum || floor || null,
     base,
     files,
   });
