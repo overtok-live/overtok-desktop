@@ -54,8 +54,14 @@ fn saved(app: &AppHandle) -> Option<std::path::PathBuf> {
 }
 
 /// Turns the sound window on (with the dashboard's sound page) or off (none); remembered.
+/// Async on purpose: building a window in a synchronous command deadlocks on Windows (WebView2),
+/// which left 0.1.1's Play sounds in the app doing nothing there.
 #[tauri::command]
-pub fn sound_window(app: AppHandle, channel: State<Channel>, page: Option<String>) -> Result<(), String> {
+pub async fn sound_window(
+    app: AppHandle,
+    channel: State<'_, Channel>,
+    page: Option<String>,
+) -> Result<(), String> {
     let Some(page) = page else {
         if let Some(window) = app.get_webview_window(LABEL) {
             let _ = window.destroy();

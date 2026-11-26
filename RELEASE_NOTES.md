@@ -1,1 +1,1 @@
-Overtok now shows up in TikTok LIVE Studio's Add audio source › Application list on Windows while Play sounds in the app is on, so only Overtok's sounds reach your LIVE. Turn Speaker off in LIVE Studio's Audio mixer when you use it, or viewers hear every sound twice.
+Play sounds in the app works on Windows again (it did nothing in 0.1.1), and the app now plays your sounds on its own when you go LIVE from TikTok LIVE Studio, so Overtok.exe is always in LIVE Studio's Add audio source › Application list.

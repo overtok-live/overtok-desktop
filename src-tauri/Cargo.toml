@@ -1,6 +1,6 @@
 [package]
 name = "overtok-desktop"
-version = "0.1.1"
+version = "0.1.2"
 description = "Overtok for the desktop: the dashboard in its own window, in the tray, updating itself."
 authors = ["Overtok"]
 edition = "2021"
